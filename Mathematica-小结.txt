@@ -1,0 +1,343 @@
+Mathematica Programming
+
+一，mathematica structure
+由内核（Kernel），前端（FrontEnd），以及各种程序包（Packages）组成。
+程序包主要分三类：标准程序包（standard）,专业程序包（Math-Source）,用户程序包（User）.
+内核与前端与程序包之间通过 Mathlink 交流协议传递数据。
+Mathlink 也可以用于FrontEnd 与其他程序如C，Fortran之间的连接。
+Mathmatica 的核心语言是 "列表―>表达式->模式->变换规则和定义"。
+
+二，mathematica language。
+
+列表
+1，产生列表：Table，Range，Array，SparseArray(结合Band)。
+2，提取列表元素：Part(结合All,;;),Extract；Take,Drop；First,Last；Rest,Most。
+3，修改列表：Insert，Delete；Prepend，Append；PrependTo, AppendTo（添加并修改，执行较慢）；
+            Riffle （洗牌）。
+4，列表排序：Sort，Ordering；Max,Min；Permutations；Reverse,RotateLeft,RotateRight。
+5，列表检测和搜索：Count，Position；Cases，Select；MemberQ，FreeQ。
+6，列表维度转换：Partition，Split；Tuples,Outter；Flatten,Transpose；
+7，列表信息：Length，Dimensions,Depth。
+8，集合操作函数：Union（区分Join），InterSection，Compliment，SubSets，DeleteDuplicates。
+
+表达式
+1，表达式（Expression）是基本结构，无论是一个数据对象，一个图像，一个Notebook都具有表达式结构。
+表达式的结构：头部（head）+元素（Elements）
+FullForm给出表达式在Kernel中的完整存储形式。TreeForm给出完整形式的树形图。
+Head[a+b+c]=Plus     FullForm[a+b+c]=Plus[a,b,c]
+
+2，表达式类型：Atoms 表达式 和 Nonatomic 表达式
+Atoms 表达式没有Part,其FullForm 就是它本身。
+Nonatomic 表达式有Part，其Part 0是其head。
+Atoms 只有三种: Symbols,numbers,strings. 诸如分数，复数都是 Atoms。
+常用的表操作函数可对Nonatomic 表达式使用： Length, Part ,Append, Insert, Prepend。
+
+3，表达式的输入方式：标准格式f[x,y],前缀格式f@x，中缀格式x～ｆ～ｙ，后缀格式ｘ//f。
+
+符号定义：
+1，直接赋值和延迟赋值: Set（=） 和 SetDelayed（:=）有着重要的差别。
+Set定义改写规则时，其右边被立刻计算一次并输出，然后将计算后的表达式加入到改写规则序列。
+SetDelayed定义改写规则时，其右边具有Hold属性保留不被计算没有输出，然后将原来的表达式加入到改写规则序列。
+一般定义函数使用延迟赋值，每次调用延迟改写规则重新计算右边。
+
+2，上值和下值: 标号circle[r]提供了对象命名途径, UpValue提供了实现一些面向对象编程功能
+的一种途径 circle/: Area[circle[r_]]=Pi*r^2。
+此外，UpValue 也是声明数据类型的一种有效方法。 如声明 NumberQ[u]^=True。则u可与  a_/;NumberQ 匹配。
+值集DownValues和UpValues可以对改写规则库中的规则匹配顺序重新定义排序。
+
+3，符号信息：Information(简写为？)以及Definitions。如？x*模糊查找以x开头的符号的信息。
+             ？Global`*能够像Matlab的Workspace那样给出当前内存中用户定义的所有的变量。
+             Names["Matrix*"]给出所有以Matrix开头的符号列表。NameQ检测是否为使用过的符号。
+
+4, 符号清除：Clear清除符号定义，但不清除符号的Attributes等信息，
+   ClearAll同时清除Attributes等信息。Remove将从内存中完全移除符号。例：Remove["Global`*"]。
+
+
+
+
+三，Functional programming
+1,函数可重载，可设置属性SetAttributes。
+  常见的属性有 Flat，Orderless, Protected, OneIdentify, Listable.
+  Listable 是非常重要的属性，可使得函数能够自动Map到表中的各个函数。
+  从而实现向量化的编程方式，与循环相比，能大大节约时间。
+
+
+2，函数操作符（High-order Function 高阶函数）
+   Map（一个算子作用到多个对象，输出列表），Through(多个算子作用到一个对象)，Scan（类似Map，但不输出）
+   Apply（应用,替换头部），Thread(按列作串，广义Transpose)，MapThread(按列作串，算子和对象分开写)
+   Inner(广义内积)，Outer（广义外积），Composition（算子复合），Identity(单位算子)，
+   InverseFunction（算子的逆），Operate(将算子作用到表达式头部)。
+   例：Thread[{x,y,z}->{1,2,3}]输出{x->1,y->2,z->3}
+       Through[(Identity+(D[#,x]&))[f[x]]]输出 f[x]+f'[x] 这一点对算符计算很有用。
+
+
+3，模块化函数
+   括号函数。如：f[x_]:=(expr1; expr2; ...; exprn), 返回最后一个表达式的值。
+   使用局部变量名   Module[{局部变量声明},表达式序列]
+   使用局部变量值  Block[{局部变量值设定，常见为系统参数如$RescursionLimit},表达式序列]
+   使用局部常数   With[{局部常数设定，常见为将一些已定义变量声明为常数},表达式序列]
+
+4，函数默认参数值
+   有两种默认参数方法：自定义默认参数和使用系统默认参数。
+   例：j[x_, y_: 1, z_: 2] := jp[x, y, z]；自定义默认参数。
+
+   一些 Mathematica 常用函数的变量具有系统设定的默认值，
+   此时不能明确给出 x_:v 中的默认值，而是可用 x_. 来使用其系统设定的默认值。
+   x_+y_.	y 的默认值为 0
+   x_ y_.	y 的默认值为 1
+   x_^y_.	y 的默认值为 1
+   例：lin[a_. + b_. x_, x_] := p[a, b]；   模式 a_. + b_. x_与任何x的线性函数匹配。
+
+四，Procedural programming
+  顺序结构: 程序的自然结构
+  分支结构: If,Which,Switch
+  循环结构：While,For,Do,FixedPoint,Nest(函数多层嵌套)，Fold(二元多层嵌套)
+  转向结构（常见于循环与分支结构中）：Break，Continue，Return，（Goto[标志]，Label[标志]）
+
+五，Rule-Based Programming
+
+1,模式(Patterns)：带有“_”的表达式表示它是一个模式。
+  如 name_ , name__ ，name___ , name_h,(h指的某种表达式开头)，x:_^_ (对复合模式命名为x), __ , ___ 都是模式。
+  一个空格代表任意一个表达式；两个空格代表任意一个或多个表达式；三个空格代表一个，多个，或零个表达式。
+  如 MatchQ[3.14,_Real]=True ；  Cases[{3,3.14,17,4+5I},_Integer]={3,17}；
+  重复模式Repeated（..或...） 如 a_ ... 用省略号代表0个或多个 a_组成的表达式序列模式。
+
+2，模式的匹配
+  head 匹配  如 MatchQ[3.14,_Real]=True
+  判据匹配   如 MatchQ[{1,2,3},_?ListQ]=True
+  head 与判据双重匹配   如  MatchQ[{1,2,3},_List?(Length[#]>2&)]=True
+
+  添加条件匹配   如 MatchQ[x^2,_^y_/;EvenQ[y]]
+
+  或匹配  如  MatchQ[3.14,_Real|_Complex]=True
+
+3，基于模式匹配的替换规则 与 表达式变换
+  Replace[expr,rules,levelspec] 应用规则到 expr 中由 levelspec 指定的部分。
+  ReplaceAll（expr\.rules）应用一个规则或规则列表尽可能转换一个表达式 expr 的每个子部分。
+  ReplaceRepeated(expr\\.rules)重复执行替换直至 expr 不再改变。
+
+  a b c d/. x_ y_->x+y        输出  a+b c d
+  a b c d//.x_ y_->x+y        输出  a+b+c+d
+ 排序   maximaR[x_List]:=x//.{a___ ,b_ ,c___ ,d_ ,e___}/;d<=b :>{a,b,c,e}
+ 压缩编码  runEncodez[lis_]:=Map[{#,1}& ,lis]//{x___,{y_ ,i_},{y_ ,j_},z___}:->{x,{y,i+j},z}
+
+六，Recursion  递归算法编程
+mathematica 天然就能识别利用递推法定义的function.
+学会 thinking recursively，培养递推的思想方法非常重要。
+
+递归范例
+求表的长度 length[{}]:=0 ; length[lis_]:= length[Rest[lis]]+1 ;
+压缩编码 runEncodeT[{}]:=0;
+      runEncodeT[{x_}]:={{x,1}}
+      runEncodeT[{x_,res__}]:=runEndodeT[{res}/.{{y_,k_},s___}->If[x==y,{{x,k+1},s},{{x,1},{y,k},s}]]
+
+七，Numerics  数值编程
+1，数据类型：四种类型 integer ,rational ,real ,complex
+   像Pi，I，E 这样的系统常数是特殊的数值类型，其Head 是Symbol，但是具有Numeric Attribute
+
+2, 数的精度（Precision）和准确度(Accuracy)
+   Precision 包含整数位与小数位，而Accuracy 只包含小数位，有时候会取负数。
+   $MachinePrecision 为计算机64位字长存储的数据的精度，其中1位是符号位，11位为指数位，53位为尾数位，
+   其精度约为53lg2=16
+
+3，准确数（Exact Numbers） 和 近似数（approximate numbers）.
+  机器精度(MachinePrecision)和扩展精度（Extended-Precision）.
+  整数，分数，复数为准确数，其精度为正无穷，但存储精度是有限位数。
+  实数为近似数。
+  对所有数机器默认以机器精度（约16位）进行存储。
+  当使用N[Pi,30],或 2^100这样的算式时候，超出了机器的存储精度范围。
+  此时mathematica 使用内部算法的Extended-Precison Integers 和 High Precison 来处理超大整数和高精度实数。
+  对不同精度的数做运算时，将得到较低精度的数值结果。
+
+4 数值计算
+  SparseArray 可构造稀疏矩阵节约存储空间和运算时间。
+  Array的数据类型一致时，mathematica内部Packed arrays 算法会对大容量 array 先编译再统一处理节约计算成本。
+  一些数值计算函数  NIntegrate  FindRoot  NDSolve
+  可以通过 WorkingPrecision,PrecisionGoal 等Options设定工作精度。
+  EvaluateMonitor 选项可以输出计算中间结果。
+  通过MaxRecursion和MinRecursion,MaxStepSize可以控制迭代次数以及步长等。
+
+八，Graphics programming 图像编程
+1，图像结构
+所有的图像都是由基本的图形单元如Point，Line，Circle，Text等组成。
+图像在mathematica的内部存储结构（FullForm或InputForm）由三大块组成：
+基本图形单元（Primitives）,绘图指令（Directives),绘图选项（Options）组成。
+
+Short[InputForm[Plot[Sin[x],{x,0,2Pi}]],10]可以查看一个Graphic的内部结构
+
+示例 Graphics[{  PointSize[0.02],           Point[{2,2}]},        Axes->True]
+               绘图指令对{}范围有效         基本图形单元     绘图选项对整个图有效
+
+2，常用的图形单元，指令和选项
+图形单元： Point， Line, Circle, Text
+指令： Dashing  ，PointSize ,  RGBColor ,Thickness, Hue
+选项  Epilog->{} （收尾，可将图形元素如文本添加到Plot命令中）
+       AspectRatio->Automatic(设置长宽比例)
+       Ticks->{}(设置坐标刻度)
+
+九，Frontend Programming  前端编程
+
+Notebook 是一种表达式，可在mathematica中以“流”的方式操作，可打开新的Notebook,写入Text,Input，并计算之。
+GridBox[data]//DisplayForm 可以生成表格形式
+ButtonBox，Button可以生成具有复制和计算功能的按钮，HyperLink可以生成超链接。
+
+
+十，Writing Packages  程序包编程
+1，Context 变量的上下文。每个symbol 第一次出现的地方就是这个symbol的上下文。
+   启动程序时的当前上下文叫 Global`( ` 叫做反引号)。内部函数 Sin 等具有上下文 System`
+   Context[f] 查看 f 的上下文
+   $Context  查看当前工作上下文
+   $ContextPath  为系统搜索变量的一系列上下文地址
+
+   当程序中声明一个符号f时，mathematica从$ContextPath中依次找含有f 的上下文。
+   排在前面的优先表示，排在后面的被屏蔽。若遍历$ContextPath都没有找到，则在$ContextPath的最后一个上下文也就是
+   $Context中创建该新的symbol f.
+
+   通过 Begin["ContextA`"]可以使得这个完整表达式结束后，当前工作上下文变成 ContextA`
+   通过 End[]来使得当前上下文返回原来值。
+   通过Begin[]和End[]后$ContextPath 不会改变。
+
+2，Package 一般结构
+   第一步：BeginPackage["IPM3`RandomWalks`"]
+           设置了$Context，并且将其加入到 $ContextPath中，这一点与Begin[],End[]不同
+   第二步：引入其它packages
+           如  Needs["Graphics`ArgColors`"]引入的packages 不会加入到$ContextPath.
+   第三步：Usage Statements  作用声明
+           如 RandomWalk::"usage"="RandomWalk generates……"
+   第四步：Warning messages
+   第五步：Options   给出相关公共函数的 Options
+   第六步： Begin Private context
+            如：Begin["Private`"]给出子上下文，且子上下文不加入到$ContextPath中去，此为私有部分。
+
+   第七步：The Function Definitions ，这是最核心部分
+   第八步：End Private context, 此时$Context回到了RandomWalks`,
+           私有部分无法直接接触，但可以通过公共部分的声明进行调用。
+   第九步： EndPackage  回到BeginPackage之前的 Context
+
+3，Package 的调用
+   Get[Calculas`VectorAnalysis`]在任何时候直接装载运行程序包
+   Needs["Calculas`VectorAnalysis`"]当该程序包不在$Packages时候装载运行程序包。
+   DeclarePackage["VectorAnalysis`", {"Div", "Grad", "Curl","namei"...}]
+   指明当名为  namei 的符号使用时自动调入一个包.
+
+   <<Calculas`VectorAnalysis` 通过上下文调用，自动翻译成上下文对应的文件名。
+   <<MathApps\Mypackage.m   通过地址调用，依赖于机器系统类型
+   等价于  <<MathApps`mypackage`  这种统一形式不依赖与机器系统类型
+
+   程序包调用的四种方法：
+   （1）打开package 并Evaluate之，即可调用。
+   （2）将package中的m文件复制到$Path的默认搜索地址。
+   （3）Get[my_package.m,Path->{指定目录地址}]
+   （4）修改$Path 的范围，$Path=Join[$Path,{指定目录地址}]
+
+    例：New File m文件，写入Plot[Sin[x],{x,-Pi,Pi}],名称为Script.m，
+        保存至 D/:Mathematica9.0/Addon/Package/Aplication,
+        然后在Notebook中调用<<Script.m，即画出Sin[x]的图像。
+
+4，文件的创建，读取，写入数据
+   创建文件  Save["filename","Context`"]
+   读取文件  Get 或 <<
+   写入数据   "expr">>>filename
+   创建流写入数据   str=OpenWrite[]              创建流
+                     Write[str,a^2,1+b^2]          写入数据
+                      Close[str]                     关闭流
+   找到文件地址   FindFile["test.gif"]
+   导出文件内容   Import["test.gif"]
+   将数据导入到文件中    Export["test.gif",Plot[Sin[x],{x,0,Pi}]]
+
+
+
+Appendix A   How expressions are evaluated?
+
+1,若表达式是一个 number 或 string,直接保留下来输出。
+
+2，若表达式是一个symbol，将在global rule base 中寻找相应的改写规则，若找到，应用并改写，否则将其保留。
+
+3，若表达式不是 number ,string 和symbol，也就是Nonatomic expression。它的各部分按如下顺序计算
+    a,expression 的head被计算
+    b,expression 的 各个part 依次被计算，除非head 具有hold属性，它的某些part不被计算。
+
+4，expression的head和各个part 被计算后，包含改写后的head和改写后的 part 的新的expression 将作为整体被计算，
+    只要是 global rule base 中存在相应的改写规则。
+
+5，重复1,2,3,4，不断对新的expression 进行改写，直到没有可以应用的改写规则。
+
+规则应用顺序优先级：user-defined rules 优先于 built-in rules；更为具体的改写规则优先于一般的改写规则。
+                    如f[0]:=... 比f[x_]:=...更为具体。
+
+
+
+Appendix B Debugging 程序调试
+
+1，Tracing Evaluation 。利用 Trace，TracePrint 对表达式计算过程跟踪，输出中间结果。
+
+2，Print variables。 此法非常有用且有效。如 F[n_]:=(Print[n];F[n-2]+F[n-1])/;n>1
+
+3, Reap and Sow 播种和收割一些中间变量值。
+
+4，常见错误
+   Part超出长度范围
+   函数定义忘记了对自变量使用pattern,少了blank
+   函数的参数不匹配
+   递归和迭代超出了可容许的最大递归和迭代深度。
+
+5，程序运行效率比较
+   向量化的编程方式（使用List）≈ Functional Programming  ＞                       （最快）
+   面向过程的编程方式（Procedual Programming）≈递归算法（Recursion）＞              （一般）
+   应用替换规则的编程方式(RuleBased Programming)                                      （最慢）
+
+
+Appendix C 一些功能强大的函数
+
+FindFit  可以拟合各类复杂的非线性函数
+
+EquationTrekker 微分方程迹线器  可以研究微分方程相图
+
+TagSetDelayed 可以定义抽象函数 如 mod/:mod[a_,p_]+mod[b_,p_]:=mod[Mod[a+b,p],p];
+
+Function  灵活运用函数可以使得程序大大简化,用#0代表纯函数本身可用于递归如 If[#1==1,1,#1 #0[#1-1]]&。
+##代表所有的参数，##2代表从第二个往后的所有的参数。如Table[i*j,##]&@@{{i,1,3},{j,1,4}}
+
+Boole 可以将逻辑结果True 和 False 转换为1和0。
+
+FindInstance 求方程的特解，可以求一些整数解和满足特定条件的解。
+
+FreeQ 可以测试表达式是否含有某种模式,通常测试所有层，类似的MemberQ测试第一层。在定义微分积分中可以应用。
+
+Tally 计数器，可以从表达式中得到某种模式出现的次数。
+
+StringExpression (~~)比StringJoin 更为强大，<>只对明确的字符串连接，而~~可以作逻辑运算，
+如StringMathQ[***,("AMEX:"|"NYSE:"|"NASDAQ:")~~__]
+
+
+Appendix D  一些快捷键
+
+F1 查找帮助
+Shift+F1 打开新的查找帮助
+F2 补全函数
+F12 全屏
+
+Ctrl+/  分数线
+Ctrl+2  二次根号
+Ctrl+ 6  上标或幂次方
+Ctrl+ _  下标
+Ctrl+z     撤销上次操作
+Shift+方向键  选择
+
+
+Alt+句号  使运行终止
+Alt+/     切换至注释
+Alt+7     切换至Text
+Alt+9     切换至Input
+Alt+"+"   变大选中内容的字号
+Alt+"-"   减小选中内容的字号
+
+Esc+dd+Esc   微分符号 d
+Esc+int+Esc  积分符号∫
+Esc+intt+Esc  积分符号∫和微分符号
+Esc+dintt+Esc  定积分符号和微分符号
+Esc+pd+Esc    偏导数符号
+Esc+sumt+Esc  定求和
+Esc+prodt+Esc  定求积
+Esc+co+Esc  复数共轭Conjugate *
+Esc+hb+Esc  普朗克常数 hbar
